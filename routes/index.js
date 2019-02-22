@@ -16,7 +16,7 @@ router.get('/session1', function(req, res, next) {
 });
 
 router.get('/session2', function(req, res, next) {
-  res.render('session2', { title: 'session 2 | Estro Chat' });
+  res.render('session2', { title: 'session 2 | Estro Chat', name: req.session.username });
 });
 
 module.exports = router;
