@@ -1,0 +1,121 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require('../app');
+var debug = require('debug')('chat-groups-node:server');
+var http = require('http');
+
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+const io = require('socket.io')(server)
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(port,console.log("App listening on port",port));
+server.on('error', onError);
+server.on('listening', onListening);
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
+
+//# Socket-io works by emitting events from the server to the client and vice-versa
+var welcomeMessages = ["act busy","seems OP, please nerf","hold my beer","please stay a while"]
+// create a server for the rooms
+const tech = io.of('/tech')
+// event called when socket is connected
+tech.on('connection', socket => {
+  var rand = Math.floor(Math.random() * 4)
+    socket.on('join',data =>{
+         console.log(`connected to ${data.room}`)
+        socket.join(data.room)
+        //emit a message `in` the current room only
+        tech.in(data.room).emit('message', `${data.user} joined ${data.room} room! ${welcomeMessages[rand]} `)
+    })
+    // custom socket event listen `message`
+    socket.on('message', data=> {
+    //    console.log(`message: ${data.msg}`)
+       // custom socket event emit `message`
+       tech.in(data.room).emit('message', data.msg)
+    })
+
+    socket.on('disconnect',()=>{
+        // console.log('user disconnect')
+
+        tech.emit('message','user disconnected')
+    })
+
+})
+
+
